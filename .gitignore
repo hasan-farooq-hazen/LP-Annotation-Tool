@@ -6,3 +6,6 @@ __pycache__/
 *.zip
 :memory:.ses
 .DS_Store
+build/
+dist/
+*.egg-info/

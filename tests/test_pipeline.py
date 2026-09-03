@@ -11,7 +11,11 @@ from types import SimpleNamespace
 import cv2
 import numpy as np
 
-from pipeline import extract_plates, extract_video_frames, reduce_similar_frames
+from hazen_license_plate_annotation_tool.pipeline import (
+    extract_plates,
+    extract_video_frames,
+    reduce_similar_frames,
+)
 
 
 class PipelineTests(unittest.TestCase):

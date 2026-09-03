@@ -1,0 +1,41 @@
+[build-system]
+requires = ["setuptools>=77"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "hazen-license-plate-annotation-tool"
+version = "0.1.0"
+description = "A friendly browser tool for extracting video frames, reducing repeats, and cropping license plates."
+readme = "README.md"
+requires-python = ">=3.10,<4.0"
+license = "MIT"
+license-files = ["LICENSE"]
+authors = [{ name = "Hazen" }]
+keywords = ["license-plate", "alpr", "ocr", "annotation", "computer-vision"]
+classifiers = [
+  "Development Status :: 3 - Alpha",
+  "Environment :: Web Environment",
+  "Intended Audience :: End Users/Desktop",
+  "Operating System :: OS Independent",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Topic :: Multimedia :: Graphics :: Capture :: Digital Camera",
+]
+dependencies = [
+  "fast-alpr[onnx]>=0.4.0,<0.5.0",
+  "streamlit>=1.40,<2.0",
+  "opencv-python-headless>=4.8,<5.1",
+]
+
+[project.urls]
+Homepage = "https://github.com/hasan-farooq-hazen/LP-Annotation-Tool"
+Repository = "https://github.com/hasan-farooq-hazen/LP-Annotation-Tool"
+Issues = "https://github.com/hasan-farooq-hazen/LP-Annotation-Tool/issues"
+
+[project.scripts]
+hazen-license-plate-annotation-tool = "hazen_license_plate_annotation_tool.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]

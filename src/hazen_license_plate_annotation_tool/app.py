@@ -14,7 +14,7 @@ from fast_alpr import ALPR
 from fast_alpr.default_detector import PlateDetectorModel
 from fast_alpr.default_ocr import OcrModel
 
-from pipeline import (
+from hazen_license_plate_annotation_tool.pipeline import (
     StageResult,
     extract_plates,
     extract_video_frames,
@@ -25,7 +25,7 @@ from pipeline import (
 )
 
 
-APP_NAME = "License Plate Annotation Tool"
+APP_NAME = "Hazen License Plate Annotation Tool"
 FPS_OPTIONS = [5, 10, 15, 20]
 SIMILARITY_LEVELS = {
     "Gentle — only very close matches": 3,

@@ -1,6 +1,6 @@
-# License Plate Annotation Tool
+# Hazen License Plate Annotation Tool
 
-A friendly Streamlit workspace for turning vehicle footage into clean license-plate crops.
+A friendly browser workspace for turning vehicle footage into clean license-plate crops.
 It is powered by [FastALPR](https://github.com/ankandrew/fast-alpr), using ONNX models for
 plate detection and OCR.
 
@@ -32,13 +32,24 @@ The launcher creates a private `.venv`, installs or updates the required compone
 opens the web interface. After that, uploads, settings, processing, model downloads, and
 result downloads are all handled inside the interface.
 
-For manual setup instead:
+## Install with pip
+
+Install the package directly from this repository:
 
 ```bash
-python -m venv .venv
-source .venv/bin/activate
-pip install -r requirements.txt
-streamlit run app.py
+pip install .
+```
+
+Then open the tool from anywhere with:
+
+```bash
+hazen-license-plate-annotation-tool
+```
+
+The equivalent module command is:
+
+```bash
+python -m hazen_license_plate_annotation_tool
 ```
 
 Models are downloaded and cached the first time plate extraction is run. CPU processing is
@@ -47,6 +58,7 @@ supported; long videos and higher frame rates naturally take more time and disk 
 ## Tests
 
 ```bash
+pip install --editable .
 python -m unittest discover -s tests -v
 ```
 
@@ -54,3 +66,14 @@ python -m unittest discover -s tests -v
 
 Uploads and generated files are kept in a temporary directory for the active browser session.
 Download any results you want to keep before closing or restarting the app.
+
+## Build a release
+
+```bash
+python -m pip install --upgrade build twine
+python -m build
+python -m twine check dist/*
+```
+
+The resulting wheel and source archive in `dist/` are ready for TestPyPI, PyPI, or the
+repository's GitHub publishing workflow.
