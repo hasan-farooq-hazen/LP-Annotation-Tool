@@ -4,13 +4,13 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "hazen-license-plate-annotation-tool"
-version = "0.1.0"
-description = "A friendly browser tool for extracting video frames, reducing repeats, and cropping license plates."
+version = "0.1.1"
+description = "An approachable browser tool from Hazen.ai for creating license-plate datasets from video."
 readme = "README.md"
 requires-python = ">=3.10,<4.0"
 license = "MIT"
 license-files = ["LICENSE"]
-authors = [{ name = "Hazen" }]
+authors = [{ name = "Hazen.ai" }]
 keywords = ["license-plate", "alpr", "ocr", "annotation", "computer-vision"]
 classifiers = [
   "Development Status :: 3 - Alpha",
@@ -30,7 +30,7 @@ dependencies = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/hasan-farooq-hazen/LP-Annotation-Tool"
+Homepage = "https://www.hazen.ai/"
 Repository = "https://github.com/hasan-farooq-hazen/LP-Annotation-Tool"
 Issues = "https://github.com/hasan-farooq-hazen/LP-Annotation-Tool/issues"
 

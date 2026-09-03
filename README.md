@@ -1,8 +1,41 @@
+<p align="center">
+  <a href="https://www.hazen.ai/">
+    <img src="https://raw.githubusercontent.com/hasan-farooq-hazen/LP-Annotation-Tool/main/assets/hazen-logo.svg" alt="Hazen.ai" width="240">
+  </a>
+</p>
+
 # Hazen License Plate Annotation Tool
 
-A friendly browser workspace for turning vehicle footage into clean license-plate crops.
+An approachable browser tool for turning vehicle footage into clean, useful license-plate
+datasets—without requiring computer-vision or command-line expertise.
+
+This tool is open sourced by [Hazen.ai](https://www.hazen.ai/), a privacy-first Urban AI
+company building technology that helps organizations understand movement, risk, and changing
+conditions across cities, roads, and complex outdoor environments. We released it to make
+license-plate dataset preparation more accessible and reduce the time and manual effort needed
+to extract frames, remove repeated images, and locate plates.
+
 It is powered by [FastALPR](https://github.com/ankandrew/fast-alpr), using ONNX models for
 plate detection and OCR.
+
+## Start in two steps
+
+Python 3.10 or newer is required.
+
+1. Install the tool:
+
+   ```bash
+   pip install hazen-license-plate-annotation-tool
+   ```
+
+2. Launch it:
+
+   ```bash
+   hazen-license-plate-annotation-tool
+   ```
+
+The browser interface opens automatically. Uploads, settings, processing, model downloads,
+and result downloads are handled inside the app, making it suitable for less-technical users.
 
 ## What it does
 
@@ -32,21 +65,7 @@ The launcher creates a private `.venv`, installs or updates the required compone
 opens the web interface. After that, uploads, settings, processing, model downloads, and
 result downloads are all handled inside the interface.
 
-## Install with pip
-
-Install the package directly from this repository:
-
-```bash
-pip install .
-```
-
-Then open the tool from anywhere with:
-
-```bash
-hazen-license-plate-annotation-tool
-```
-
-The equivalent module command is:
+If the launch command is not available in your terminal, use the equivalent module command:
 
 ```bash
 python -m hazen_license_plate_annotation_tool

@@ -25,7 +25,7 @@ from hazen_license_plate_annotation_tool.pipeline import (
 )
 
 
-APP_NAME = "Hazen License Plate Annotation Tool"
+APP_NAME = "License Plate Annotation Tool"
 FPS_OPTIONS = [5, 10, 15, 20]
 SIMILARITY_LEVELS = {
     "Gentle — only very close matches": 3,
