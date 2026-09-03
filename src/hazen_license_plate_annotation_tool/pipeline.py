@@ -9,6 +9,7 @@ import math
 import re
 import shutil
 import zipfile
+from collections import Counter
 from collections.abc import Callable, Iterable, Sequence
 from dataclasses import dataclass
 from pathlib import Path, PurePosixPath
@@ -513,6 +514,77 @@ def extract_plates(
         input_count=len(images),
         output_count=saved,
         skipped_count=no_detection,
+        error_count=errors,
+        output_dir=output_dir,
+        manifest_path=manifest_path,
+    )
+
+
+def collect_frames_with_plates(
+    input_dir: Path,
+    plate_manifest_path: Path,
+    output_dir: Path,
+) -> StageResult:
+    """Copy each unique source frame containing at least one detected plate."""
+    images = image_paths(input_dir)
+    if not plate_manifest_path.is_file():
+        raise ValueError("The plate detection manifest could not be found.")
+
+    detection_counts: Counter[str] = Counter()
+    with plate_manifest_path.open(newline="", encoding="utf-8") as handle:
+        for row in csv.DictReader(handle):
+            source_relative = row.get("source_relative", "")
+            if source_relative and row.get("detection_index", ""):
+                detection_counts[source_relative] += 1
+
+    output_dir.mkdir(parents=True, exist_ok=True)
+    rows: list[dict[str, object]] = []
+    saved = errors = 0
+    for source_relative in sorted(detection_counts):
+        relative = PurePosixPath(source_relative)
+        row: dict[str, object] = {
+            "source_relative": source_relative,
+            "plate_detections": detection_counts[source_relative],
+            "output_relative": "",
+            "status": "saved",
+            "error": "",
+        }
+        try:
+            if relative.is_absolute() or ".." in relative.parts:
+                raise ValueError("Unsafe source path in plate manifest")
+            source = input_dir.joinpath(*relative.parts)
+            if not source.is_file() or source.suffix.lower() not in IMAGE_SUFFIXES:
+                raise ValueError("Source frame could not be found")
+            destination = output_dir.joinpath(*relative.parts)
+            destination.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copy2(source, destination)
+            row["output_relative"] = relative.as_posix()
+            saved += 1
+        except Exception as exc:
+            row["status"] = "error"
+            row["error"] = f"{type(exc).__name__}: {exc}"
+            errors += 1
+        rows.append(row)
+
+    manifest_path = output_dir / "manifest.csv"
+    fields = [
+        "source_relative", "plate_detections", "output_relative", "status", "error",
+    ]
+    with manifest_path.open("w", newline="", encoding="utf-8") as handle:
+        writer = csv.DictWriter(handle, fieldnames=fields)
+        writer.writeheader()
+        writer.writerows(rows)
+    _write_json(
+        output_dir / "run_config.json",
+        {
+            "input_reduced_frames": len(images),
+            "frames_with_detected_plates": saved,
+        },
+    )
+    return StageResult(
+        input_count=len(images),
+        output_count=saved,
+        skipped_count=max(0, len(images) - len(detection_counts)),
         error_count=errors,
         output_dir=output_dir,
         manifest_path=manifest_path,

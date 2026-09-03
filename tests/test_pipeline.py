@@ -12,6 +12,7 @@ import cv2
 import numpy as np
 
 from hazen_license_plate_annotation_tool.pipeline import (
+    collect_frames_with_plates,
     extract_plates,
     extract_video_frames,
     reduce_similar_frames,
@@ -89,6 +90,44 @@ class PipelineTests(unittest.TestCase):
         with result.manifest_path.open(newline="") as handle:
             row = next(csv.DictReader(handle))
         self.assertEqual(row["status"], "saved")
+
+    def test_only_frames_with_detected_plates_are_collected(self) -> None:
+        source = self.root / "source"
+        source.mkdir()
+        for name in ("with_plate.jpg", "without_plate.jpg"):
+            cv2.imwrite(str(source / name), np.full((80, 160, 3), 180, dtype=np.uint8))
+
+        manifest = self.root / "plate_manifest.csv"
+        with manifest.open("w", newline="", encoding="utf-8") as handle:
+            writer = csv.DictWriter(
+                handle,
+                fieldnames=["source_relative", "detection_index", "status"],
+            )
+            writer.writeheader()
+            writer.writerow(
+                {"source_relative": "with_plate.jpg", "detection_index": 1, "status": "saved"}
+            )
+            writer.writerow(
+                {"source_relative": "with_plate.jpg", "detection_index": 2, "status": "saved"}
+            )
+            writer.writerow(
+                {
+                    "source_relative": "without_plate.jpg",
+                    "detection_index": "",
+                    "status": "no_plate_detected",
+                }
+            )
+
+        result = collect_frames_with_plates(source, manifest, self.root / "selected")
+
+        self.assertEqual(result.input_count, 2)
+        self.assertEqual(result.output_count, 1)
+        self.assertEqual(result.skipped_count, 1)
+        self.assertTrue((result.output_dir / "with_plate.jpg").is_file())
+        self.assertFalse((result.output_dir / "without_plate.jpg").exists())
+        with result.manifest_path.open(newline="", encoding="utf-8") as handle:
+            row = next(csv.DictReader(handle))
+        self.assertEqual(row["plate_detections"], "2")
 
 
 if __name__ == "__main__":

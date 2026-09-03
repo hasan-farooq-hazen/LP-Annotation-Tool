@@ -16,6 +16,7 @@ from fast_alpr.default_ocr import OcrModel
 
 from hazen_license_plate_annotation_tool.pipeline import (
     StageResult,
+    collect_frames_with_plates,
     extract_plates,
     extract_video_frames,
     image_paths,
@@ -505,6 +506,14 @@ if mode == "Guided workflow":
                 plate_result = extract_plates(reduced_output, plate_output, alpr, callback)
                 bar.empty()
                 _remember_artifact("plates", plate_result)
+
+                detected_frames_output = _new_directory("frames_with_plates")
+                detected_frames_result = collect_frames_with_plates(
+                    reduced_output,
+                    plate_result.manifest_path,
+                    detected_frames_output,
+                )
+                _remember_artifact("plate_frames", detected_frames_result)
                 status.update(label="All three steps completed", state="complete", expanded=False)
         except Exception as exc:
             st.error(f"Processing stopped: {exc}")
@@ -517,11 +526,11 @@ if mode == "Guided workflow":
             "license_plate_crops.zip",
             "Download plate crops (.zip)",
         )
-        if "reduced" in st.session_state.downloads:
+        if "plate_frames" in st.session_state.downloads:
             st.download_button(
-                "Download reduced frames (.zip)",
-                st.session_state.downloads["reduced"],
-                "reduced_frames.zip",
+                "Download frames containing plates (.zip)",
+                st.session_state.downloads["plate_frames"],
+                "frames_with_plates.zip",
                 "application/zip",
                 key="download_guided_reduced",
                 use_container_width=True,

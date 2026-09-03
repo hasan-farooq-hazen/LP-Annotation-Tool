@@ -48,8 +48,10 @@ The app provides three tools that can be used independently:
 3. **Extract license plates** — upload images/ZIPs or reuse an earlier result, detect and
    crop plates, and name them with OCR text when available.
 
-The **Guided workflow** runs all three stages from a single video. Every result is provided
-as a downloadable ZIP containing the output images, `manifest.csv`, and `run_config.json`.
+The **Guided workflow** runs all three stages from a single video. It provides separate ZIP
+downloads for the plate crops and the corresponding reduced source frames. Frames where no
+plate was detected are not included in the guided source-frame download. Each ZIP also
+contains `manifest.csv` and `run_config.json`.
 
 ## Run locally
 
