@@ -28,7 +28,7 @@ def package_fingerprint() -> str:
 def main() -> int:
     python = environment_python()
     if not python.exists():
-        print("Preparing the Hazen License Plate Annotation Tool for first use…")
+        print("Preparing the License Plate Annotation Tool for first use…")
         venv.EnvBuilder(with_pip=True).create(ENVIRONMENT)
 
     fingerprint = package_fingerprint()
@@ -44,7 +44,7 @@ def main() -> int:
         )
         INSTALL_MARKER.write_text(fingerprint + "\n", encoding="utf-8")
 
-    print("Opening the Hazen License Plate Annotation Tool in your browser…")
+    print("Opening the License Plate Annotation Tool in your browser…")
     return subprocess.call(
         [str(python), "-m", "hazen_license_plate_annotation_tool"]
     )

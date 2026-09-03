@@ -1,3 +1,3 @@
-"""Hazen License Plate Annotation Tool."""
+"""License Plate Annotation Tool."""
 
 __version__ = "0.1.0"

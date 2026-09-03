@@ -4,7 +4,7 @@
   </a>
 </p>
 
-# Hazen License Plate Annotation Tool
+# License Plate Annotation Tool
 
 An approachable browser tool for turning vehicle footage into clean, useful license-plate
 datasets—without requiring computer-vision or command-line expertise.
