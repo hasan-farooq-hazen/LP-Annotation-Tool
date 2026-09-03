@@ -1,23 +1,3 @@
----
-title: License Plate Annotation Tool
-emoji: 🔍
-colorFrom: green
-colorTo: blue
-sdk: streamlit
-sdk_version: 1.40.2
-app_file: app.py
-tags:
-- computer-vision
-- license-plate-recognition
-- video-processing
-- annotation
-- ocr
-- onnx
-pinned: true
-license: mit
-short_description: Extract frames, remove repeats, and crop license plates.
----
-
 # License Plate Annotation Tool
 
 A friendly Streamlit workspace for turning vehicle footage into clean license-plate crops.
