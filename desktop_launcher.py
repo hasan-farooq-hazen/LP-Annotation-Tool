@@ -27,6 +27,8 @@ def main() -> int:
         "run",
         str(_bootstrap_path()),
         "--server.headless=false",
+        "--server.address=127.0.0.1",
+        "--server.port=8501",
         "--server.maxUploadSize=1024",
         "--browser.gatherUsageStats=false",
         "--theme.base=light",
