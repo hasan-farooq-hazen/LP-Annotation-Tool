@@ -19,10 +19,8 @@ from hazen_license_plate_annotation_tool.pipeline import (
     collect_frames_with_plates,
     extract_plates,
     extract_video_frames,
-    image_paths,
     make_zip_bytes,
     reduce_similar_frames,
-    unpack_image_uploads,
 )
 
 
@@ -316,70 +314,14 @@ def _progress_callback(label: str):
     return bar, update
 
 
-def _remember_artifact(name: str, result: StageResult) -> None:
-    st.session_state.artifacts[name] = result
-    st.session_state.downloads[name] = make_zip_bytes(result.output_dir)
-
-
-def _show_result(
+def _remember_artifact(
     name: str,
-    title: str,
-    download_name: str,
-    download_label: str = "Download results (.zip)",
+    result: StageResult,
+    prepare_download: bool = False,
 ) -> None:
-    result = st.session_state.artifacts.get(name)
-    if result is None:
-        return
-    st.success(f"{title} completed")
-    first, second, third = st.columns(3)
-    first.metric("Input", f"{result.input_count:,}")
-    second.metric("Created", f"{result.output_count:,}")
-    third.metric("Skipped", f"{result.skipped_count:,}")
-    if result.error_count:
-        st.warning(f"{result.error_count:,} item(s) could not be processed. Details are in manifest.csv.")
-    st.download_button(
-        download_label,
-        data=st.session_state.downloads[name],
-        file_name=download_name,
-        mime="application/zip",
-        key=f"download_{name}",
-        use_container_width=True,
-    )
-
-
-def _uploaded_image_directory(files, scope: str) -> Path:
-    directory = _new_directory(f"{scope}_input")
-    uploads = [(file.name, file.getvalue()) for file in files]
-    written = unpack_image_uploads(uploads, directory)
-    if not written:
-        raise ValueError("Please upload JPG/PNG images or a ZIP containing images.")
-    return directory
-
-
-def _choose_image_source(scope: str, artifact_names: list[tuple[str, str]]):
-    available = [item for item in artifact_names if item[0] in st.session_state.artifacts]
-    labels = [label for _, label in available]
-    labels.append("Upload images or a ZIP")
-    choice = st.radio(
-        "Where should the images come from?",
-        labels,
-        key=f"source_{scope}",
-        horizontal=True,
-    )
-    files = None
-    source = None
-    if choice == "Upload images or a ZIP":
-        files = st.file_uploader(
-            "Choose JPG/PNG images or ZIP files",
-            type=["jpg", "jpeg", "png", "zip"],
-            accept_multiple_files=True,
-            key=f"images_{scope}",
-        )
-    else:
-        artifact_name = next(name for name, label in available if label == choice)
-        source = st.session_state.artifacts[artifact_name].output_dir
-        st.caption(f"{len(image_paths(source)):,} images are ready from the earlier step.")
-    return source, files
+    st.session_state.artifacts[name] = result
+    if prepare_download:
+        st.session_state.downloads[name] = make_zip_bytes(result.output_dir)
 
 
 def _run_frame_stage(video_path, fps, quality, start, end) -> StageResult:
@@ -395,7 +337,7 @@ def _header() -> None:
     st.markdown(f'<div class="app-title">{APP_NAME}</div>', unsafe_allow_html=True)
     st.markdown(
         '<div class="app-subtitle">Turn vehicle video into a clean, reviewable set of '
-        'license-plate crops. Run one tool at a time or let the guided workflow handle everything.</div>',
+        'source frames containing detected license plates.</div>',
         unsafe_allow_html=True,
     )
     st.write("")
@@ -405,202 +347,101 @@ _workspace()
 _header()
 
 with st.sidebar:
-    if "active_mode" not in st.session_state:
-        st.session_state.active_mode = "Guided workflow"
-
-    st.markdown("### Main workflow")
-    st.caption("Recommended for most users")
-    if st.button(
-        "★ Guided workflow",
-        key="nav_guided",
-        type="primary" if st.session_state.active_mode == "Guided workflow" else "secondary",
-        use_container_width=True,
-    ):
-        st.session_state.active_mode = "Guided workflow"
-
-    with st.expander("Individual steps"):
-        st.caption("Choose one task to run on its own")
-        individual_modes = [
-            ("Video → frames", "1 · Video to frames"),
-            ("Reduce similar frames", "2 · Reduce similar frames"),
-            ("Extract plates", "3 · Extract license plates"),
-        ]
-        for index, (button_label, individual_mode) in enumerate(individual_modes, start=1):
-            if st.button(
-                button_label,
-                key=f"nav_individual_{index}",
-                type=(
-                    "primary"
-                    if st.session_state.active_mode == individual_mode
-                    else "secondary"
-                ),
-                use_container_width=True,
-            ):
-                st.session_state.active_mode = individual_mode
-
-    mode = st.session_state.active_mode
+    st.markdown("### Guided workflow")
+    st.caption("Upload one video and run the complete three-step process.")
     st.markdown("---")
     st.caption("WORK COMPLETED THIS SESSION")
     for artifact, label in (
         ("frames", "Frames"),
         ("reduced", "Reduced set"),
-        ("plates", "Plate crops"),
+        ("plates", "Plate detections"),
     ):
         result = st.session_state.artifacts.get(artifact)
         st.write(f"{'✓' if result else '○'} {label}" + (f" · {result.output_count:,}" if result else ""))
     st.caption("Files stay available while this browser session remains open.")
 
 
-if mode == "Guided workflow":
-    st.subheader("From video to plate crops")
-    columns = st.columns(3)
-    cards = [
-        ("1", "Create frames", "Choose 5–20 FPS and optionally trim the video."),
-        ("2", "Remove repeats", "Keep the clearest examples from similar groups."),
-        ("3", "Extract plates", "Crop each plate and use OCR to name it."),
-    ]
-    for column, (number, title, text) in zip(columns, cards):
-        column.markdown(
-            f'<div class="step-card"><div class="step-number">{number}</div>'
-            f'<strong>{title}</strong><span>{text}</span></div>',
-            unsafe_allow_html=True,
-        )
-    st.write("")
-    st.markdown(
-        '<div class="quick-start">Quick start: upload your video and press “Process video '
-        'and extract plates.” The recommended settings are already selected.</div>',
+st.subheader("From video to frames containing license plates")
+columns = st.columns(3)
+cards = [
+    ("1", "Create frames", "Choose 5–20 FPS and optionally trim the video."),
+    ("2", "Remove repeats", "Keep the clearest examples from similar groups."),
+    ("3", "Find plates", "Detect plates and retain their corresponding source frames."),
+]
+for column, (number, title, text) in zip(columns, cards):
+    column.markdown(
+        f'<div class="step-card"><div class="step-number">{number}</div>'
+        f'<strong>{title}</strong><span>{text}</span></div>',
         unsafe_allow_html=True,
     )
-    upload, video_path, fps, quality, start, end = _video_controls("guided")
-    with st.expander("Similarity settings · recommended defaults selected", expanded=False):
-        distance, keep = _similarity_controls("guided")
-    with st.expander("Plate recognition settings · recommended defaults selected", expanded=False):
-        confidence, detector, ocr = _plate_controls("guided")
+st.write("")
+st.markdown(
+    '<div class="quick-start">Upload your video and press “Process video.” '
+    'The recommended settings are already selected.</div>',
+    unsafe_allow_html=True,
+)
+upload, video_path, fps, quality, start, end = _video_controls("guided")
+with st.expander("Similarity settings · recommended defaults selected", expanded=False):
+    distance, keep = _similarity_controls("guided")
+with st.expander("Plate recognition settings · recommended defaults selected", expanded=False):
+    confidence, detector, ocr = _plate_controls("guided")
 
-    if st.button(
-        "Process video and extract plates",
-        type="primary",
-        disabled=upload is None,
-        use_container_width=True,
-    ):
-        try:
-            with st.status("Processing your video", expanded=True) as status:
-                st.write("1 of 3 · Creating frames")
-                frame_result = _run_frame_stage(video_path, fps, quality, start, end)
-                st.write(f"Created {frame_result.output_count:,} frames")
+if st.button(
+    "Process video",
+    type="primary",
+    disabled=upload is None,
+    use_container_width=True,
+):
+    try:
+        with st.status("Processing your video", expanded=True) as status:
+            st.write("1 of 3 · Creating frames")
+            frame_result = _run_frame_stage(video_path, fps, quality, start, end)
+            st.write(f"Created {frame_result.output_count:,} frames")
 
-                st.write("2 of 3 · Selecting the clearest unique frames")
-                reduced_output = _new_directory("reduced")
-                bar, callback = _progress_callback("Comparing frames")
-                reduced_result = reduce_similar_frames(
-                    frame_result.output_dir, reduced_output, distance, keep, callback
-                )
-                bar.empty()
-                _remember_artifact("reduced", reduced_result)
-                st.write(f"Kept {reduced_result.output_count:,} frames")
-
-                st.write("3 of 3 · Finding and reading license plates")
-                plate_output = _new_directory("plates")
-                bar, callback = _progress_callback("Loading recognition models")
-                alpr = _get_alpr(detector, ocr, confidence)
-                plate_result = extract_plates(reduced_output, plate_output, alpr, callback)
-                bar.empty()
-                _remember_artifact("plates", plate_result)
-
-                detected_frames_output = _new_directory("frames_with_plates")
-                detected_frames_result = collect_frames_with_plates(
-                    reduced_output,
-                    plate_result.manifest_path,
-                    detected_frames_output,
-                )
-                _remember_artifact("plate_frames", detected_frames_result)
-                status.update(label="All three steps completed", state="complete", expanded=False)
-        except Exception as exc:
-            st.error(f"Processing stopped: {exc}")
-
-    if "plates" in st.session_state.artifacts:
-        st.markdown("### Your results")
-        _show_result(
-            "plates",
-            "Plate extraction",
-            "license_plate_crops.zip",
-            "Download plate crops (.zip)",
-        )
-        if "plate_frames" in st.session_state.downloads:
-            st.download_button(
-                "Download frames containing plates (.zip)",
-                st.session_state.downloads["plate_frames"],
-                "frames_with_plates.zip",
-                "application/zip",
-                key="download_guided_reduced",
-                use_container_width=True,
-            )
-
-elif mode == "1 · Video to frames":
-    st.subheader("Create frames from a video")
-    st.markdown(
-        '<div class="section-note">Use this when you only need still images. Plate detection is not '
-        'run in this step, so every sampled frame is delivered.</div>',
-        unsafe_allow_html=True,
-    )
-    upload, video_path, fps, quality, start, end = _video_controls("frames_only")
-    if st.button(
-        "Create frames", type="primary", disabled=upload is None, use_container_width=True
-    ):
-        try:
-            _run_frame_stage(video_path, fps, quality, start, end)
-        except Exception as exc:
-            st.error(f"The video could not be processed: {exc}")
-    _show_result("frames", "Frame extraction", "video_frames.zip")
-
-elif mode == "2 · Reduce similar frames":
-    st.subheader("Reduce similar frames")
-    st.markdown(
-        '<div class="section-note">The clearest image in each similar group is kept. This tool works '
-        'independently—you can upload images made by any system.</div>',
-        unsafe_allow_html=True,
-    )
-    source, files = _choose_image_source("reduce", [("frames", "Use frames from step 1")])
-    distance, keep = _similarity_controls("reduce")
-    ready = source is not None or bool(files)
-    if st.button(
-        "Reduce similar frames", type="primary", disabled=not ready, use_container_width=True
-    ):
-        try:
-            input_dir = source or _uploaded_image_directory(files, "reduce")
-            output = _new_directory("reduced")
+            st.write("2 of 3 · Selecting the clearest unique frames")
+            reduced_output = _new_directory("reduced")
             bar, callback = _progress_callback("Comparing frames")
-            result = reduce_similar_frames(input_dir, output, distance, keep, callback)
+            reduced_result = reduce_similar_frames(
+                frame_result.output_dir, reduced_output, distance, keep, callback
+            )
             bar.empty()
-            _remember_artifact("reduced", result)
-        except Exception as exc:
-            st.error(f"The images could not be processed: {exc}")
-    _show_result("reduced", "Similarity reduction", "reduced_frames.zip")
+            _remember_artifact("reduced", reduced_result)
+            st.write(f"Kept {reduced_result.output_count:,} frames")
 
-else:
-    st.subheader("Extract license plates")
-    st.markdown(
-        '<div class="section-note">Each detected plate is saved as a separate image. Recognized '
-        'plate text is used as the filename; unreadable plates are still kept.</div>',
-        unsafe_allow_html=True,
-    )
-    source, files = _choose_image_source(
-        "plates",
-        [("reduced", "Use reduced frames from step 2"), ("frames", "Use frames from step 1")],
-    )
-    confidence, detector, ocr = _plate_controls("plates")
-    ready = source is not None or bool(files)
-    if st.button(
-        "Extract license plates", type="primary", disabled=not ready, use_container_width=True
-    ):
-        try:
-            input_dir = source or _uploaded_image_directory(files, "plates")
-            output = _new_directory("plates")
+            st.write("3 of 3 · Finding license plates")
+            plate_output = _new_directory("plates")
             bar, callback = _progress_callback("Loading recognition models")
             alpr = _get_alpr(detector, ocr, confidence)
-            result = extract_plates(input_dir, output, alpr, callback)
+            plate_result = extract_plates(reduced_output, plate_output, alpr, callback)
             bar.empty()
-            _remember_artifact("plates", result)
-        except Exception as exc:
-            st.error(f"Plate extraction could not be completed: {exc}")
-    _show_result("plates", "Plate extraction", "license_plate_crops.zip")
+            _remember_artifact("plates", plate_result)
+
+            detected_frames_output = _new_directory("frames_with_plates")
+            detected_frames_result = collect_frames_with_plates(
+                reduced_output,
+                plate_result.manifest_path,
+                detected_frames_output,
+            )
+            _remember_artifact("plate_frames", detected_frames_result, prepare_download=True)
+            status.update(label="All three steps completed", state="complete", expanded=False)
+    except Exception as exc:
+        st.error(f"Processing stopped: {exc}")
+
+if "plate_frames" in st.session_state.artifacts:
+    result = st.session_state.artifacts["plate_frames"]
+    st.markdown("### Your results")
+    st.success("Video processing completed")
+    first, second, third = st.columns(3)
+    first.metric("Reduced frames", f"{result.input_count:,}")
+    second.metric("Frames with plates", f"{result.output_count:,}")
+    third.metric("Without plates", f"{result.skipped_count:,}")
+    if result.error_count:
+        st.warning(f"{result.error_count:,} frame(s) could not be prepared for download.")
+    st.download_button(
+        "Download frames containing plates (.zip)",
+        st.session_state.downloads["plate_frames"],
+        "frames_with_plates.zip",
+        "application/zip",
+        key="download_guided_frames",
+        use_container_width=True,
+    )
